@@ -84,6 +84,13 @@
         .save-btn:hover {
             background-color: #0b7dda;
         }
+        .whatsapp-btn {
+            background-color: #25D366;
+            margin: 5px;
+        }
+        .whatsapp-btn:hover {
+            background-color: #1da851;
+        }
         label {
             display: block;
             margin: 5px 0;
@@ -102,6 +109,13 @@
 <body>
 
 <h2>BM Peribahasa Quiz - 马来语谚语测验</h2>
+<div style="background: #e6f3ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+    <p><strong>💡 温馨提示：</strong></p>
+    <p>• 完成测验后可以选择发送成绩到WhatsApp</p>
+    <p>• 可以直接发送给老师汇报，或与朋友分享比拼</p>
+    <p>• "发送给老师"会直接发送到老师的WhatsApp (+60127317286)</p>
+    <p>• "分享给朋友"可以选择任意联系人发送</p>
+</div>
 
 <div class="tabs">
     <div class="tab active" onclick="showTab('quiz')">做测验</div>
@@ -349,6 +363,10 @@ function displayResults(name, form, score, results, unanswered) {
         <h3>得分: <span class="${score >= 15 ? 'correct' : 'incorrect'}">${score} / 20</span></h3>
         ${unanswered > 0 ? `<p>注意：你有 ${unanswered} 题没有作答</p>` : ''}
         <p>${getFeedback(score)}</p>
+        <div class="save-buttons">
+            <button class="whatsapp-btn" onclick="sendToWhatsApp('${name}', '${form}', ${score}, ${unanswered}, 'teacher')">📱 发送给老师</button>
+            <button class="whatsapp-btn" onclick="sendToWhatsApp('${name}', '${form}', ${score}, ${unanswered}, 'friend')">📱 分享给朋友</button>
+        </div>
         <hr>
     `;
     
@@ -386,6 +404,96 @@ function getFeedback(score) {
     }
 }
 
+function sendToWhatsApp(name, form, score, unanswered, recipient = 'general') {
+    const date = new Date().toLocaleString();
+    const percentage = Math.round((score / 20) * 100);
+    const grade = getGrade(score);
+    
+    let message = '';
+    let whatsappUrl = '';
+    
+    if (recipient === 'teacher') {
+        message += `尊敬的老师，您好！\n\n`;
+        message += `我是 ${name} (${form})，刚完成了BM Peribahasa测验，现向您汇报成绩：\n\n`;
+        message += `📊 测验成绩: ${score}/20 分 (${percentage}%)\n`;
+        message += `⭐ 等级: ${grade}\n`;
+        message += `📅 测验时间: ${date}\n`;
+        if (unanswered > 0) {
+            message += `⚠️ 未完成题目: ${unanswered} 题\n`;
+        }
+        message += `\n🎯 掌握程度: ${getSkillLevel(score)}\n`;
+        message += `\n我会继续努力学习马来语谚语，谢谢老师的指导！`;
+        
+        // Encode the message for URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Create WhatsApp URL with specific teacher phone number
+        whatsappUrl = `https://wa.me/60127317286?text=${encodedMessage}`;
+        
+    } else if (recipient === 'friend') {
+        message += `嘿！刚做完BM Peribahasa测验，来看看我的成绩吧！🎉\n\n`;
+        message += `📱 测验: 马来语谚语挑战\n`;
+        message += `🏆 我的分数: ${score}/20 (${percentage}%)\n`;
+        message += `🌟 等级: ${grade}\n`;
+        if (score >= 16) {
+            message += `\n哈哈，这次发挥得不错！😎`;
+        } else if (score >= 12) {
+            message += `\n还可以啦，下次要更努力！💪`;
+        } else {
+            message += `\n这次有点难，不过我会继续加油的！🔥`;
+        }
+        message += `\n\n你也来试试看吧！谁怕谁啊～ 😄`;
+        
+        // Encode the message for URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Create general WhatsApp URL (user can choose contact)
+        whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+        
+    } else {
+        // General message (fallback)
+        message += `📚 BM Peribahasa Quiz 成绩报告\n\n`;
+        message += `👤 姓名: ${name}\n`;
+        message += `🎓 年级: ${form}\n`;
+        message += `📅 测验日期: ${date}\n`;
+        message += `📊 得分: ${score}/20 (${percentage}%)\n`;
+        message += `⭐ 等级: ${grade}\n`;
+        if (unanswered > 0) {
+            message += `⚠️ 未作答题目: ${unanswered} 题\n`;
+        }
+        message += `\n📝 评语: ${getFeedback(score)}\n`;
+        message += `\n🎯 马来语谚语掌握程度: ${getSkillLevel(score)}\n`;
+        message += `\n💪 继续加油，学好马来语谚语！`;
+        
+        // Encode the message for URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Create general WhatsApp URL
+        whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    }
+    
+    // Open WhatsApp
+    window.open(whatsappUrl, '_blank');
+}
+
+function getGrade(score) {
+    if (score >= 18) return "A+ 优秀";
+    if (score >= 16) return "A 良好";
+    if (score >= 14) return "B+ 不错";
+    if (score >= 12) return "B 及格";
+    if (score >= 10) return "C+ 需要努力";
+    if (score >= 8) return "C 需要加强";
+    return "D 需要重新学习";
+}
+
+function getSkillLevel(score) {
+    if (score >= 18) return "专家级 🌟";
+    if (score >= 15) return "熟练级 ⭐";
+    if (score >= 12) return "中级 📚";
+    if (score >= 8) return "初级 📖";
+    return "入门级 🔰";
+}
+
 function saveAttempt(name, form, score, results) {
     const attempts = JSON.parse(localStorage.getItem('peribahasaQuizAttempts') || '[]');
     const attempt = {
@@ -417,6 +525,10 @@ function loadHistory() {
                 <p>姓名: ${attempt.name} | 年级: ${attempt.form}</p>
                 <p>得分: <strong>${attempt.score} / 20</strong></p>
                 <button onclick="viewAttemptDetails(${index})">查看详情</button>
+                <div style="margin-top: 10px;">
+                    <button class="whatsapp-btn" onclick="sendHistoryToWhatsApp(${index}, 'teacher')" style="font-size: 12px; padding: 8px 12px;">📱 发送给老师</button>
+                    <button class="whatsapp-btn" onclick="sendHistoryToWhatsApp(${index}, 'friend')" style="font-size: 12px; padding: 8px 12px;">📱 分享给朋友</button>
+                </div>
                 <div id="attemptDetails${index}" style="display: none; margin-top: 10px;">
                     ${attempt.results.map((r, qIndex) => `
                         <div style="margin-bottom: 15px; padding: 10px; background: ${r.isCorrect ? '#e6ffe6' : '#ffe6e6'}; border-radius: 5px;">
@@ -434,6 +546,118 @@ function loadHistory() {
     });
     
     historyList.innerHTML = html;
+}
+
+function sendHistoryToWhatsApp(attemptIndex, recipient = 'general') {
+    const attempts = JSON.parse(localStorage.getItem('peribahasaQuizAttempts') || '[]');
+    const attempt = attempts[attemptIndex];
+    
+    if (!attempt) {
+        alert("找不到该测验记录！");
+        return;
+    }
+    
+    const percentage = Math.round((attempt.score / 20) * 100);
+    const grade = getGrade(attempt.score);
+    const unanswered = attempt.results.filter(r => r.selected === "未作答").length;
+    
+    let message = '';
+    let whatsappUrl = '';
+    
+    if (recipient === 'teacher') {
+        message += `尊敬的老师，您好！\n\n`;
+        message += `我是 ${attempt.name} (${attempt.form})，向您汇报BM Peribahasa测验成绩：\n\n`;
+        message += `📊 测验成绩: ${attempt.score}/20 分 (${percentage}%)\n`;
+        message += `⭐ 等级: ${grade}\n`;
+        message += `📅 测验时间: ${attempt.date}\n`;
+        if (unanswered > 0) {
+            message += `⚠️ 未完成题目: ${unanswered} 题\n`;
+        }
+        message += `\n🎯 掌握程度: ${getSkillLevel(attempt.score)}\n`;
+        
+        // Add wrong answers for teacher
+        const wrongAnswers = attempt.results.filter(r => !r.isCorrect);
+        if (wrongAnswers.length > 0) {
+            message += `\n❌ 需要加强的题目:\n`;
+            wrongAnswers.slice(0, 3).forEach((r, index) => {
+                const qNum = attempt.results.indexOf(r) + 1;
+                message += `${index + 1}. 第${qNum}题: 选择了"${r.selected}"，正确答案是"${r.correct}"\n`;
+            });
+            if (wrongAnswers.length > 3) {
+                message += `... 还有 ${wrongAnswers.length - 3} 道需要复习\n`;
+            }
+        }
+        
+        message += `\n我会针对错题进行复习，谢谢老师的指导！`;
+        
+        // Encode the message for URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Create WhatsApp URL with specific teacher phone number
+        whatsappUrl = `https://wa.me/60127317286?text=${encodedMessage}`;
+        
+    } else if (recipient === 'friend') {
+        message += `嘿！看看我之前的BM Peribahasa测验成绩！🎉\n\n`;
+        message += `📱 测验: 马来语谚语挑战\n`;
+        message += `🏆 我的分数: ${attempt.score}/20 (${percentage}%)\n`;
+        message += `🌟 等级: ${grade}\n`;
+        message += `📅 测验时间: ${attempt.date}\n`;
+        
+        if (attempt.score >= 16) {
+            message += `\n这次发挥得还不错！😎`;
+        } else if (attempt.score >= 12) {
+            message += `\n还可以啦，继续努力中！💪`;
+        } else {
+            message += `\n这次有点挑战，不过在进步中！🔥`;
+        }
+        message += `\n\n你也来试试看吧！一起挑战马来语谚语～ 😄`;
+        
+        // Encode the message for URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Create general WhatsApp URL (user can choose contact)
+        whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+        
+    } else {
+        // General message (keeping the original format)
+        message += `📚 BM Peribahasa Quiz 成绩报告\n\n`;
+        message += `👤 姓名: ${attempt.name}\n`;
+        message += `🎓 年级: ${attempt.form}\n`;
+        message += `📅 测验日期: ${attempt.date}\n`;
+        message += `📊 得分: ${attempt.score}/20 (${percentage}%)\n`;
+        message += `⭐ 等级: ${grade}\n`;
+        
+        if (unanswered > 0) {
+            message += `⚠️ 未作答题目: ${unanswered} 题\n`;
+        }
+        
+        message += `\n📝 评语: ${getFeedback(attempt.score)}\n`;
+        message += `\n🎯 马来语谚语掌握程度: ${getSkillLevel(attempt.score)}\n`;
+        
+        // Add wrong answers details
+        const wrongAnswers = attempt.results.filter(r => !r.isCorrect);
+        if (wrongAnswers.length > 0) {
+            message += `\n❌ 错题分析:\n`;
+            wrongAnswers.slice(0, 3).forEach((r, index) => {
+                const qNum = attempt.results.indexOf(r) + 1;
+                message += `${index + 1}. 第${qNum}题: ${r.selected} → ${r.correct}\n`;
+            });
+            if (wrongAnswers.length > 3) {
+                message += `... 还有 ${wrongAnswers.length - 3} 道错题\n`;
+            }
+        }
+        
+        message += `\n💪 继续加油，学好马来语谚语！`;
+        
+        // Encode the message for URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Create general WhatsApp URL
+        whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    }
+    
+    // Open WhatsApp
+    window.open(whatsappUrl, '_blank');
 }
 
 function viewAttemptDetails(index) {
