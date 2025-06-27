@@ -129,10 +129,10 @@
 <h2>BM Peribahasa Quiz - 马来语谚语测验</h2>
 <div style="background: #e6f3ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
     <p><strong>💡 温馨提示：</strong></p>
-    <p>• 📱 <strong>发送成绩给老师</strong> - 直接发送到老师WhatsApp (+60127317286)</p>
-    <p>• 🖼️ <strong>生成成绩单图片</strong> - 制作正式的成绩单图片，可下载后发送给老师</p>
-    <p>• 📱 <strong>分享给朋友</strong> - 轻松格式与朋友分享成绩</p>
+    <p>• 📱 <strong>发送成绩给老师</strong> - 直接发送文字成绩到老师WhatsApp (+60127317286)</p>
+    <p>• 🖼️ <strong>发送成绩单图片给老师</strong> - 自动下载图片并打开老师WhatsApp，手动附加图片发送</p>
     <p>• 💾 图片格式的成绩单更正式，包含详细的错题分析，适合向老师汇报</p>
+    <p>• 🚀 两种方式都会直接打开老师的WhatsApp对话，非常方便！</p>
 </div>
 
 <div class="tabs">
@@ -383,8 +383,7 @@ function displayResults(name, form, score, results, unanswered) {
         <p>${getFeedback(score)}</p>
         <div class="save-buttons">
             <button class="whatsapp-btn" onclick="sendToWhatsApp('${name}', '${form}', ${score}, ${unanswered}, 'teacher')">📱 发送成绩给老师</button>
-            <button class="whatsapp-btn" onclick="generateReportImage('${name}', '${form}', ${score}, ${unanswered})">🖼️ 生成成绩单图片</button>
-            <button class="whatsapp-btn" onclick="sendToWhatsApp('${name}', '${form}', ${score}, ${unanswered}, 'friend')">📱 分享给朋友</button>
+            <button class="whatsapp-btn" onclick="generateReportImage('${name}', '${form}', ${score}, ${unanswered})">🖼️ 发送成绩单图片给老师</button>
         </div>
         <div id="reportCanvas" style="margin-top: 20px;"></div>
         <hr>
@@ -424,7 +423,7 @@ function getFeedback(score) {
     }
 }
 
-function sendToWhatsApp(name, form, score, unanswered, recipient = 'general') {
+function sendToWhatsApp(name, form, score, unanswered, recipient = 'teacher') {
     const date = new Date().toLocaleString();
     const percentage = Math.round((score / 20) * 100);
     const grade = getGrade(score);
@@ -449,26 +448,6 @@ function sendToWhatsApp(name, form, score, unanswered, recipient = 'general') {
         
         // Create WhatsApp URL with specific teacher phone number
         whatsappUrl = `https://wa.me/60127317286?text=${encodedMessage}`;
-        
-    } else if (recipient === 'friend') {
-        message += `嘿！刚做完BM Peribahasa测验，来看看我的成绩吧！🎉\n\n`;
-        message += `📱 测验: 马来语谚语挑战\n`;
-        message += `🏆 我的分数: ${score}/20 (${percentage}%)\n`;
-        message += `🌟 等级: ${grade}\n`;
-        if (score >= 16) {
-            message += `\n哈哈，这次发挥得不错！😎`;
-        } else if (score >= 12) {
-            message += `\n还可以啦，下次要更努力！💪`;
-        } else {
-            message += `\n这次有点难，不过我会继续加油的！🔥`;
-        }
-        message += `\n\n你也来试试看吧！谁怕谁啊～ 😄`;
-        
-        // Encode the message for URL
-        const encodedMessage = encodeURIComponent(message);
-        
-        // Create general WhatsApp URL (user can choose contact)
-        whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
         
     } else {
         // General message (fallback)
@@ -648,10 +627,10 @@ function generateReportImage(name, form, score, unanswered) {
             <canvas id="generatedCanvas" width="800" height="1000" style="max-width: 100%; height: auto; border: 1px solid #ddd;"></canvas>
             <div style="margin-top: 15px;">
                 <button class="download-btn" onclick="downloadReportImage()">💾 下载图片</button>
-                <button class="whatsapp-btn" onclick="shareReportImage()">📱 分享到WhatsApp</button>
+                <button class="whatsapp-btn" onclick="shareReportImage()">📱 发送图片给老师</button>
             </div>
             <p style="color: #666; font-size: 14px; margin-top: 10px;">
-                💡 提示：点击"下载图片"保存到设备，然后可以通过WhatsApp发送给老师
+                💡 提示：点击"发送图片给老师"会自动下载图片并打开老师的WhatsApp对话，然后手动附加图片发送即可
             </p>
         </div>
     `;
@@ -678,25 +657,27 @@ function downloadReportImage() {
 }
 
 function shareReportImage() {
-    if (navigator.share && window.reportCanvas) {
-        // Convert canvas to blob
-        window.reportCanvas.toBlob(function(blob) {
-            const file = new File([blob], 'BM_Peribahasa_成绩单.png', { type: 'image/png' });
-            navigator.share({
-                title: 'BM Peribahasa Quiz 成绩单',
-                text: '我的马来语谚语测验成绩单',
-                files: [file]
-            }).catch(err => {
-                console.log('分享失败:', err);
-                // Fallback to download
-                downloadReportImage();
-            });
-        });
+    if (window.reportCanvas) {
+        // First, automatically download the image
+        const link = document.createElement('a');
+        link.download = `BM_Peribahasa_成绩单_${new Date().toISOString().split('T')[0]}.png`;
+        link.href = window.reportCanvas.toDataURL();
+        link.click();
+        
+        // Then open teacher's WhatsApp with a message
+        const message = encodeURIComponent('老师您好！我刚完成了BM Peribahasa测验，成绩单图片已准备好发送给您 📋✨');
+        
+        // Small delay to ensure download starts first
+        setTimeout(() => {
+            window.open(`https://wa.me/60127317286?text=${message}`, '_blank');
+        }, 500);
+        
+        // Show instruction to user
+        setTimeout(() => {
+            alert('📱 成绩单图片已下载到您的设备！\n\n请在打开的WhatsApp对话中：\n1. 点击附件按钮 📎\n2. 选择刚下载的成绩单图片\n3. 发送给老师即可！');
+        }, 1000);
     } else {
-        // Fallback: open WhatsApp with instruction
-        const message = encodeURIComponent('我刚生成了BM Peribahasa测验成绩单图片，请查看我发送的图片 📋✨');
-        window.open(`https://wa.me/60127317286?text=${message}`, '_blank');
-        alert('请手动下载图片，然后在WhatsApp中发送给老师 📱');
+        alert('请先生成成绩单图片！');
     }
 }
 
@@ -751,8 +732,7 @@ function loadHistory() {
                 <button onclick="viewAttemptDetails(${index})">查看详情</button>
                 <div style="margin-top: 10px;">
                     <button class="whatsapp-btn" onclick="sendHistoryToWhatsApp(${index}, 'teacher')" style="font-size: 12px; padding: 8px 12px;">📱 发送成绩给老师</button>
-                    <button class="download-btn" onclick="generateHistoryReportImage(${index})" style="font-size: 12px; padding: 8px 12px;">🖼️ 生成成绩单图片</button>
-                    <button class="whatsapp-btn" onclick="sendHistoryToWhatsApp(${index}, 'friend')" style="font-size: 12px; padding: 8px 12px;">📱 分享给朋友</button>
+                    <button class="download-btn" onclick="generateHistoryReportImage(${index})" style="font-size: 12px; padding: 8px 12px;">🖼️ 发送成绩单图片给老师</button>
                 </div>
                 <div id="attemptDetails${index}" style="display: none; margin-top: 10px;">
                     ${attempt.results.map((r, qIndex) => `
@@ -773,7 +753,7 @@ function loadHistory() {
     historyList.innerHTML = html;
 }
 
-function sendHistoryToWhatsApp(attemptIndex, recipient = 'general') {
+function sendHistoryToWhatsApp(attemptIndex, recipient = 'teacher') {
     const attempts = JSON.parse(localStorage.getItem('peribahasaQuizAttempts') || '[]');
     const attempt = attempts[attemptIndex];
     
@@ -820,28 +800,6 @@ function sendHistoryToWhatsApp(attemptIndex, recipient = 'general') {
         
         // Create WhatsApp URL with specific teacher phone number
         whatsappUrl = `https://wa.me/60127317286?text=${encodedMessage}`;
-        
-    } else if (recipient === 'friend') {
-        message += `嘿！看看我之前的BM Peribahasa测验成绩！🎉\n\n`;
-        message += `📱 测验: 马来语谚语挑战\n`;
-        message += `🏆 我的分数: ${attempt.score}/20 (${percentage}%)\n`;
-        message += `🌟 等级: ${grade}\n`;
-        message += `📅 测验时间: ${attempt.date}\n`;
-        
-        if (attempt.score >= 16) {
-            message += `\n这次发挥得还不错！😎`;
-        } else if (attempt.score >= 12) {
-            message += `\n还可以啦，继续努力中！💪`;
-        } else {
-            message += `\n这次有点挑战，不过在进步中！🔥`;
-        }
-        message += `\n\n你也来试试看吧！一起挑战马来语谚语～ 😄`;
-        
-        // Encode the message for URL
-        const encodedMessage = encodeURIComponent(message);
-        
-        // Create general WhatsApp URL (user can choose contact)
-        whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
         
     } else {
         // General message (keeping the original format)
@@ -1036,8 +994,18 @@ function generateHistoryReportImage(attemptIndex) {
     link.href = canvas.toDataURL();
     link.click();
     
-    // Also show success message
-    alert('成绩单图片已下载！您可以通过WhatsApp发送给老师 📱');
+    // Open teacher's WhatsApp with message
+    const message = encodeURIComponent(`老师您好！我是${attempt.name}，这是我${attempt.date}的BM Peribahasa测验成绩单，请查看 📋`);
+    
+    // Small delay to ensure download starts first
+    setTimeout(() => {
+        window.open(`https://wa.me/60127317286?text=${message}`, '_blank');
+    }, 500);
+    
+    // Also show success message with instructions
+    setTimeout(() => {
+        alert('📱 成绩单图片已下载！WhatsApp对话已打开\n\n请在对话中附加刚下载的图片发送给老师即可！');
+    }, 1000);
 }
 
 function viewAttemptDetails(index) {
