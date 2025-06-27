@@ -91,6 +91,24 @@
         .whatsapp-btn:hover {
             background-color: #1da851;
         }
+        .download-btn {
+            background-color: #FF6B35;
+            margin: 5px;
+        }
+        .download-btn:hover {
+            background-color: #E55A2B;
+        }
+        #reportCanvas {
+            text-align: center;
+        }
+        .canvas-container {
+            display: inline-block;
+            margin: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background: white;
+        }
         label {
             display: block;
             margin: 5px 0;
@@ -111,10 +129,10 @@
 <h2>BM Peribahasa Quiz - 马来语谚语测验</h2>
 <div style="background: #e6f3ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
     <p><strong>💡 温馨提示：</strong></p>
-    <p>• 完成测验后可以选择发送成绩到WhatsApp</p>
-    <p>• 可以直接发送给老师汇报，或与朋友分享比拼</p>
-    <p>• "发送给老师"会直接发送到老师的WhatsApp (+60127317286)</p>
-    <p>• "分享给朋友"可以选择任意联系人发送</p>
+    <p>• 📱 <strong>发送成绩给老师</strong> - 直接发送到老师WhatsApp (+60127317286)</p>
+    <p>• 🖼️ <strong>生成成绩单图片</strong> - 制作正式的成绩单图片，可下载后发送给老师</p>
+    <p>• 📱 <strong>分享给朋友</strong> - 轻松格式与朋友分享成绩</p>
+    <p>• 💾 图片格式的成绩单更正式，包含详细的错题分析，适合向老师汇报</p>
 </div>
 
 <div class="tabs">
@@ -364,9 +382,11 @@ function displayResults(name, form, score, results, unanswered) {
         ${unanswered > 0 ? `<p>注意：你有 ${unanswered} 题没有作答</p>` : ''}
         <p>${getFeedback(score)}</p>
         <div class="save-buttons">
-            <button class="whatsapp-btn" onclick="sendToWhatsApp('${name}', '${form}', ${score}, ${unanswered}, 'teacher')">📱 发送给老师</button>
+            <button class="whatsapp-btn" onclick="sendToWhatsApp('${name}', '${form}', ${score}, ${unanswered}, 'teacher')">📱 发送成绩给老师</button>
+            <button class="whatsapp-btn" onclick="generateReportImage('${name}', '${form}', ${score}, ${unanswered})">🖼️ 生成成绩单图片</button>
             <button class="whatsapp-btn" onclick="sendToWhatsApp('${name}', '${form}', ${score}, ${unanswered}, 'friend')">📱 分享给朋友</button>
         </div>
+        <div id="reportCanvas" style="margin-top: 20px;"></div>
         <hr>
     `;
     
@@ -476,6 +496,210 @@ function sendToWhatsApp(name, form, score, unanswered, recipient = 'general') {
     window.open(whatsappUrl, '_blank');
 }
 
+function generateReportImage(name, form, score, unanswered) {
+    // Get current quiz results for error analysis
+    let wrongAnswers = [];
+    questions.forEach((q, index) => {
+        const selected = document.querySelector(`input[name="q${index}"]:checked`);
+        const isCorrect = selected && selected.value === q.answer;
+        if (!isCorrect) {
+            wrongAnswers.push({
+                number: index + 1,
+                question: q.q.substring(0, 50) + "...",
+                selected: selected ? selected.value : "未作答",
+                correct: q.answer
+            });
+        }
+    });
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size
+    canvas.width = 800;
+    canvas.height = 1000;
+    
+    // Background gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#f8f9fa');
+    gradient.addColorStop(1, '#e9ecef');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Header background
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(0, 0, canvas.width, 120);
+    
+    // Title
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 32px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('BM Peribahasa Quiz', canvas.width/2, 50);
+    ctx.fillText('马来语谚语测验成绩单', canvas.width/2, 90);
+    
+    // Student Info Section
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('学生信息 Student Information', 50, 170);
+    
+    ctx.font = '20px Arial';
+    ctx.fillText(`姓名 Name: ${name}`, 50, 210);
+    ctx.fillText(`年级 Form: ${form}`, 50, 240);
+    ctx.fillText(`测验日期 Date: ${new Date().toLocaleDateString()}`, 50, 270);
+    
+    // Score Section
+    const percentage = Math.round((score / 20) * 100);
+    const grade = getGrade(score);
+    
+    ctx.fillStyle = '#2196F3';
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText('测验成绩 Test Results', 50, 320);
+    
+    // Score circle
+    const centerX = canvas.width - 150;
+    const centerY = 370;
+    const radius = 80;
+    
+    // Draw score circle background
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = score >= 15 ? '#4CAF50' : score >= 10 ? '#FF9800' : '#F44336';
+    ctx.fill();
+    
+    // Score text in circle
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${score}/20`, centerX, centerY - 10);
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText(`${percentage}%`, centerX, centerY + 20);
+    
+    // Detailed scores
+    ctx.fillStyle = '#333';
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(`总分 Total Score: ${score}/20 (${percentage}%)`, 50, 360);
+    ctx.fillText(`等级 Grade: ${grade}`, 50, 390);
+    ctx.fillText(`技能水平 Skill Level: ${getSkillLevel(score)}`, 50, 420);
+    
+    if (unanswered > 0) {
+        ctx.fillStyle = '#F44336';
+        ctx.fillText(`未作答题目 Unanswered: ${unanswered} 题`, 50, 450);
+    }
+    
+    // Performance Analysis
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText('表现分析 Performance Analysis', 50, 510);
+    
+    ctx.font = '18px Arial';
+    const feedback = getFeedback(score);
+    const words = feedback.split(' ');
+    let line = '';
+    let y = 540;
+    
+    for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > 700 && n > 0) {
+            ctx.fillText(line, 50, y);
+            line = words[n] + ' ';
+            y += 25;
+        } else {
+            line = testLine;
+        }
+    }
+    ctx.fillText(line, 50, y);
+    
+    // Wrong Answers Section (if any)
+    if (wrongAnswers.length > 0) {
+        y += 50;
+        ctx.fillStyle = '#F44336';
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText(`错题分析 Wrong Answers (${wrongAnswers.length} 题)`, 50, y);
+        
+        ctx.fillStyle = '#333';
+        ctx.font = '16px Arial';
+        
+        wrongAnswers.slice(0, 5).forEach((error, index) => {
+            y += 30;
+            ctx.fillText(`${index + 1}. 第${error.number}题: ${error.selected} → ${error.correct}`, 50, y);
+        });
+        
+        if (wrongAnswers.length > 5) {
+            y += 25;
+            ctx.fillText(`... 还有 ${wrongAnswers.length - 5} 道错题`, 50, y);
+        }
+    }
+    
+    // Footer
+    ctx.fillStyle = '#666';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('继续加油，学好马来语谚语！Keep up the good work!', canvas.width/2, canvas.height - 30);
+    
+    // Display canvas and download options
+    const reportDiv = document.getElementById('reportCanvas');
+    reportDiv.innerHTML = `
+        <div class="canvas-container">
+            <h3>📋 成绩单已生成</h3>
+            <canvas id="generatedCanvas" width="800" height="1000" style="max-width: 100%; height: auto; border: 1px solid #ddd;"></canvas>
+            <div style="margin-top: 15px;">
+                <button class="download-btn" onclick="downloadReportImage()">💾 下载图片</button>
+                <button class="whatsapp-btn" onclick="shareReportImage()">📱 分享到WhatsApp</button>
+            </div>
+            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                💡 提示：点击"下载图片"保存到设备，然后可以通过WhatsApp发送给老师
+            </p>
+        </div>
+    `;
+    
+    // Copy canvas content to displayed canvas
+    const displayCanvas = document.getElementById('generatedCanvas');
+    const displayCtx = displayCanvas.getContext('2d');
+    displayCtx.drawImage(canvas, 0, 0);
+    
+    // Store canvas globally for download
+    window.reportCanvas = canvas;
+    
+    // Scroll to canvas
+    reportDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+function downloadReportImage() {
+    if (window.reportCanvas) {
+        const link = document.createElement('a');
+        link.download = `BM_Peribahasa_成绩单_${new Date().toISOString().split('T')[0]}.png`;
+        link.href = window.reportCanvas.toDataURL();
+        link.click();
+    }
+}
+
+function shareReportImage() {
+    if (navigator.share && window.reportCanvas) {
+        // Convert canvas to blob
+        window.reportCanvas.toBlob(function(blob) {
+            const file = new File([blob], 'BM_Peribahasa_成绩单.png', { type: 'image/png' });
+            navigator.share({
+                title: 'BM Peribahasa Quiz 成绩单',
+                text: '我的马来语谚语测验成绩单',
+                files: [file]
+            }).catch(err => {
+                console.log('分享失败:', err);
+                // Fallback to download
+                downloadReportImage();
+            });
+        });
+    } else {
+        // Fallback: open WhatsApp with instruction
+        const message = encodeURIComponent('我刚生成了BM Peribahasa测验成绩单图片，请查看我发送的图片 📋✨');
+        window.open(`https://wa.me/60127317286?text=${message}`, '_blank');
+        alert('请手动下载图片，然后在WhatsApp中发送给老师 📱');
+    }
+}
+
 function getGrade(score) {
     if (score >= 18) return "A+ 优秀";
     if (score >= 16) return "A 良好";
@@ -526,7 +750,8 @@ function loadHistory() {
                 <p>得分: <strong>${attempt.score} / 20</strong></p>
                 <button onclick="viewAttemptDetails(${index})">查看详情</button>
                 <div style="margin-top: 10px;">
-                    <button class="whatsapp-btn" onclick="sendHistoryToWhatsApp(${index}, 'teacher')" style="font-size: 12px; padding: 8px 12px;">📱 发送给老师</button>
+                    <button class="whatsapp-btn" onclick="sendHistoryToWhatsApp(${index}, 'teacher')" style="font-size: 12px; padding: 8px 12px;">📱 发送成绩给老师</button>
+                    <button class="download-btn" onclick="generateHistoryReportImage(${index})" style="font-size: 12px; padding: 8px 12px;">🖼️ 生成成绩单图片</button>
                     <button class="whatsapp-btn" onclick="sendHistoryToWhatsApp(${index}, 'friend')" style="font-size: 12px; padding: 8px 12px;">📱 分享给朋友</button>
                 </div>
                 <div id="attemptDetails${index}" style="display: none; margin-top: 10px;">
@@ -658,6 +883,161 @@ function sendHistoryToWhatsApp(attemptIndex, recipient = 'general') {
     
     // Open WhatsApp
     window.open(whatsappUrl, '_blank');
+}
+
+function generateHistoryReportImage(attemptIndex) {
+    const attempts = JSON.parse(localStorage.getItem('peribahasaQuizAttempts') || '[]');
+    const attempt = attempts[attemptIndex];
+    
+    if (!attempt) {
+        alert("找不到该测验记录！");
+        return;
+    }
+    
+    const unanswered = attempt.results.filter(r => r.selected === "未作答").length;
+    const wrongAnswers = attempt.results.filter(r => !r.isCorrect).map((r, index) => ({
+        number: attempt.results.indexOf(r) + 1,
+        question: r.question.substring(0, 50) + "...",
+        selected: r.selected,
+        correct: r.correct
+    }));
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size
+    canvas.width = 800;
+    canvas.height = 1000;
+    
+    // Background gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#f8f9fa');
+    gradient.addColorStop(1, '#e9ecef');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Header background
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(0, 0, canvas.width, 120);
+    
+    // Title
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 32px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('BM Peribahasa Quiz', canvas.width/2, 50);
+    ctx.fillText('马来语谚语测验成绩单', canvas.width/2, 90);
+    
+    // Student Info Section
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('学生信息 Student Information', 50, 170);
+    
+    ctx.font = '20px Arial';
+    ctx.fillText(`姓名 Name: ${attempt.name}`, 50, 210);
+    ctx.fillText(`年级 Form: ${attempt.form}`, 50, 240);
+    ctx.fillText(`测验日期 Date: ${attempt.date}`, 50, 270);
+    
+    // Score Section
+    const percentage = Math.round((attempt.score / 20) * 100);
+    const grade = getGrade(attempt.score);
+    
+    ctx.fillStyle = '#2196F3';
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText('测验成绩 Test Results', 50, 320);
+    
+    // Score circle
+    const centerX = canvas.width - 150;
+    const centerY = 370;
+    const radius = 80;
+    
+    // Draw score circle background
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = attempt.score >= 15 ? '#4CAF50' : attempt.score >= 10 ? '#FF9800' : '#F44336';
+    ctx.fill();
+    
+    // Score text in circle
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${attempt.score}/20`, centerX, centerY - 10);
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText(`${percentage}%`, centerX, centerY + 20);
+    
+    // Detailed scores
+    ctx.fillStyle = '#333';
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(`总分 Total Score: ${attempt.score}/20 (${percentage}%)`, 50, 360);
+    ctx.fillText(`等级 Grade: ${grade}`, 50, 390);
+    ctx.fillText(`技能水平 Skill Level: ${getSkillLevel(attempt.score)}`, 50, 420);
+    
+    if (unanswered > 0) {
+        ctx.fillStyle = '#F44336';
+        ctx.fillText(`未作答题目 Unanswered: ${unanswered} 题`, 50, 450);
+    }
+    
+    // Performance Analysis
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText('表现分析 Performance Analysis', 50, 510);
+    
+    ctx.font = '18px Arial';
+    const feedback = getFeedback(attempt.score);
+    const words = feedback.split(' ');
+    let line = '';
+    let y = 540;
+    
+    for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > 700 && n > 0) {
+            ctx.fillText(line, 50, y);
+            line = words[n] + ' ';
+            y += 25;
+        } else {
+            line = testLine;
+        }
+    }
+    ctx.fillText(line, 50, y);
+    
+    // Wrong Answers Section (if any)
+    if (wrongAnswers.length > 0) {
+        y += 50;
+        ctx.fillStyle = '#F44336';
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText(`错题分析 Wrong Answers (${wrongAnswers.length} 题)`, 50, y);
+        
+        ctx.fillStyle = '#333';
+        ctx.font = '16px Arial';
+        
+        wrongAnswers.slice(0, 5).forEach((error, index) => {
+            y += 30;
+            ctx.fillText(`${index + 1}. 第${error.number}题: ${error.selected} → ${error.correct}`, 50, y);
+        });
+        
+        if (wrongAnswers.length > 5) {
+            y += 25;
+            ctx.fillText(`... 还有 ${wrongAnswers.length - 5} 道错题`, 50, y);
+        }
+    }
+    
+    // Footer
+    ctx.fillStyle = '#666';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('继续加油，学好马来语谚语！Keep up the good work!', canvas.width/2, canvas.height - 30);
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.download = `BM_Peribahasa_成绩单_${attempt.name}_${attempt.date.replace(/[/:]/g, '-')}.png`;
+    link.href = canvas.toDataURL();
+    link.click();
+    
+    // Also show success message
+    alert('成绩单图片已下载！您可以通过WhatsApp发送给老师 📱');
 }
 
 function viewAttemptDetails(index) {
